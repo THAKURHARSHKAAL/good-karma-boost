@@ -5,6 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { Sparkles, Loader2, Timer } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function formatCountdown(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeconds / 3600)
+    .toString()
+    .padStart(2, "0");
+  const m = Math.floor((totalSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -130,6 +145,18 @@ export function AppShell({ children, title = "Karma" }: { children: ReactNode; t
             <p className="-mt-0.5 text-base font-black tracking-tight">{title}</p>
           </div>
           <div />
+        </div>
+        <div
+          className={`mx-auto max-w-md px-4 py-2 text-xs font-semibold border-t ${
+            isUrgent ? "bg-red-500/15 text-red-300 border-red-400/40" : "bg-sky-500/10 text-sky-200 border-sky-400/20"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1">
+              <Timer className="h-3.5 w-3.5" /> 24h karma countdown
+            </span>
+            <span className="tracking-widest">{formatCountdown(remaining)}</span>
+          </div>
         </div>
         <div
           className={`mx-auto max-w-md px-4 py-2 text-xs font-semibold border-t ${
