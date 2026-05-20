@@ -21,6 +21,20 @@ function formatCountdown(ms: number) {
   return `${h}:${m}:${s}`;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function formatCountdown(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeconds / 3600)
+    .toString()
+    .padStart(2, "0");
+  const m = Math.floor((totalSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
+
 export function AppShell({ children, title = "Karma" }: { children: ReactNode; title?: string }) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
