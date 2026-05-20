@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { levelFor } from "@/lib/karma";
@@ -18,6 +24,8 @@ import {
   MapPin,
   Flame,
   Save,
+  MoreHorizontal,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,6 +58,7 @@ function ProfilePage() {
   const [rank, setRank] = useState<number | null>(null);
   const [badges, setBadges] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
   const [form, setForm] = useState({ display_name: "", username: "", bio: "", location_city: "" });
 
   const load = async () => {
@@ -112,6 +121,7 @@ function ProfilePage() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile updated");
+    setShowEditor(false);
     load();
   };
 
@@ -138,11 +148,12 @@ function ProfilePage() {
   const lvl = levelFor(Number(profile.karma_points));
 
   return (
-    <div className="min-h-full bg-black text-white">
-      <div className="border-b border-white/10 px-5 py-4 bg-zinc-950">
-        <div className="flex items-start gap-4">
+    <div className="min-h-full border-x border-white/10 bg-black text-white">
+      <div className="h-28 bg-gradient-to-b from-sky-500/30 via-sky-500/10 to-transparent" />
+      <div className="px-4 pb-4 -mt-12 border-b border-white/10">
+        <div className="flex items-start justify-between gap-3">
           <label className="relative cursor-pointer">
-            <Avatar className="h-20 w-20 ring-2 ring-white/30">
+            <Avatar className="h-24 w-24 ring-4 ring-black border border-white/20">
               <AvatarImage src={profile.avatar_url ?? undefined} />
               <AvatarFallback className="text-xl bg-zinc-800 text-white">
                 {(profile.display_name || profile.username).slice(0, 2).toUpperCase()}
@@ -154,42 +165,53 @@ function ProfilePage() {
               hidden
               onChange={(e) => e.target.files?.[0] && uploadAvatar(e.target.files[0])}
             />
-            <span className="absolute -bottom-1 -right-1 bg-white text-black rounded-full p-1.5">
+            <span className="absolute -bottom-1 -right-1 rounded-full border border-white/20 bg-sky-500 p-2 text-black">
               <ImageIcon className="h-3 w-3" />
             </span>
           </label>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-xl leading-tight truncate">
-              {profile.display_name || profile.username}
-            </h1>
-            <p className="text-sm text-zinc-400 truncate">@{profile.username}</p>
-            <div className="mt-2 inline-flex items-center gap-1 text-xs font-semibold bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full">
-              <Sparkles className="h-3 w-3" /> {lvl.name}
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={signOut}
-            className="text-zinc-300 hover:bg-zinc-800 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="mt-14 rounded-full border-white/20 bg-black/80">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-zinc-950 text-white border-white/10">
+              <DropdownMenuItem onClick={() => setShowEditor((v) => !v)}>
+                <Pencil className="h-4 w-4" /> Edit profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={signOut} className="text-red-400">
+                <LogOut className="h-4 w-4" /> Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 mt-5 text-center">
-          <Stat label="Karma" value={Number(profile.karma_points).toFixed(0)} />
-          <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
+        <div className="mt-3">
+          <h1 className="font-bold text-xl leading-tight truncate">{profile.display_name || profile.username}</h1>
+          <p className="text-sm text-zinc-400 truncate">@{profile.username}</p>
+          {profile.bio && <p className="text-sm text-zinc-200 mt-2">{profile.bio}</p>}
+          <div className="mt-2 flex items-center gap-3 text-xs text-zinc-400">
+            <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {profile.location_city || "Unknown"}</span>
+            <span className="inline-flex items-center gap-1 text-yellow-300"><Sparkles className="h-3 w-3" /> {lvl.name}</span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-center">
+          <div className="rounded-full border border-sky-400/40 bg-sky-500/15 px-5 py-2 text-center">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-sky-200">Karma</p>
+            <p className="text-2xl font-black text-white">{Number(profile.karma_points).toFixed(0)}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+                    <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
           <Stat label="Posts" value={posts.length.toString()} />
-          <Stat
-            label="Streak"
-            value={`${profile.streak_days}`}
-            icon={<Flame className="h-3 w-3" />}
-          />
+          <Stat label="Streak" value={`${profile.streak_days}`} icon={<Flame className="h-3 w-3" />} />
         </div>
 
         <div className="mt-4">
-          <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+          <div className="mb-1 flex items-center justify-between text-xs text-zinc-400">
             <span>{lvl.name}</span>
             <span>{lvl.next} pts</span>
           </div>
@@ -197,45 +219,22 @@ function ProfilePage() {
         </div>
       </div>
 
-      <div className="px-4 py-4 border-b border-white/10 space-y-3">
-        <h2 className="text-sm font-semibold">Edit profile</h2>
-        <div className="grid grid-cols-1 gap-2">
-          <Input
-            value={form.display_name}
-            onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
-            placeholder="Name"
-            className="bg-zinc-900 border-zinc-700 text-white"
-          />
-          <Input
-            value={form.username}
-            onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
-            placeholder="Username"
-            className="bg-zinc-900 border-zinc-700 text-white"
-          />
-          <Input
-            value={form.location_city}
-            onChange={(e) => setForm((f) => ({ ...f, location_city: e.target.value }))}
-            placeholder="City"
-            className="bg-zinc-900 border-zinc-700 text-white"
-          />
-          <Textarea
-            value={form.bio}
-            onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-            placeholder="Bio"
-            className="bg-zinc-900 border-zinc-700 text-white min-h-20"
-            maxLength={200}
-          />
+      {showEditor && (
+        <div className="px-4 py-4 border-b border-white/10 space-y-3 bg-zinc-950/60">
+          <h2 className="text-sm font-semibold">Edit profile</h2>
+          <div className="grid grid-cols-1 gap-2">
+            <Input value={form.display_name} onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))} placeholder="Name" className="bg-zinc-900 border-zinc-700 text-white" />
+            <Input value={form.username} onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))} placeholder="Username" className="bg-zinc-900 border-zinc-700 text-white" />
+            <Input value={form.location_city} onChange={(e) => setForm((f) => ({ ...f, location_city: e.target.value }))} placeholder="City" className="bg-zinc-900 border-zinc-700 text-white" />
+            <Textarea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} placeholder="Bio" className="bg-zinc-900 border-zinc-700 text-white min-h-20" maxLength={200} />
+          </div>
+          <div className="flex items-center justify-end">
+            <Button onClick={saveProfile} disabled={!hasChanges || saving} className="rounded-full bg-sky-500 text-black hover:bg-sky-400">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-zinc-500 inline-flex items-center gap-1">
-            <MapPin className="h-3 w-3" /> Keep your profile up to date.
-          </p>
-          <Button onClick={saveProfile} disabled={!hasChanges || saving} className="rounded-full">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{" "}
-            Save
-          </Button>
-        </div>
-      </div>
+      )}
 
       {badges.length > 0 && (
         <div className="px-4 py-3 border-b border-white/10">
@@ -244,12 +243,7 @@ function ProfilePage() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {badges.map((b) => (
-              <span
-                key={b}
-                className="text-xs bg-zinc-800 text-zinc-100 rounded-full px-3 py-1 capitalize"
-              >
-                {b}
-              </span>
+              <span key={b} className="text-xs bg-zinc-800 text-zinc-100 rounded-full px-3 py-1 capitalize">{b}</span>
             ))}
           </div>
         </div>
@@ -257,25 +251,12 @@ function ProfilePage() {
 
       <div>
         {posts.length === 0 ? (
-          <div className="text-center py-12 text-sm text-zinc-500">
-            No posts yet — share your first good deed.
-          </div>
+          <div className="text-center py-12 text-sm text-zinc-500">No posts yet — share your first good deed.</div>
         ) : (
           <div className="grid grid-cols-3 gap-[1px] bg-zinc-900">
             {posts.map((p) => (
               <div key={p.id} className="aspect-square bg-zinc-800 relative overflow-hidden">
-                {p.image_url ? (
-                  <img
-                    src={p.image_url}
-                    alt={p.title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center p-2 text-xs text-center text-zinc-400">
-                    {p.title}
-                  </div>
-                )}
+                {p.image_url ? <img src={p.image_url} alt={p.title} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center p-2 text-xs text-center text-zinc-400">{p.title}</div>}
                 <div className="absolute bottom-1 right-1 bg-black/75 px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-0.5">
                   <Sparkles className="h-2.5 w-2.5 text-yellow-300" />
                   {Number(p.karma_value).toFixed(1)}
@@ -291,11 +272,8 @@ function ProfilePage() {
 
 function Stat({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
-    <div className="bg-zinc-900 border border-white/10 rounded-xl py-2.5">
-      <div className="font-bold text-base inline-flex items-center gap-1">
-        {icon}
-        {value}
-      </div>
+    <div className="rounded-xl border border-white/10 bg-zinc-900 py-2.5">
+      <div className="font-bold text-base inline-flex items-center gap-1">{icon}{value}</div>
       <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
