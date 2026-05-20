@@ -197,9 +197,15 @@ function ProfilePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 mt-4 text-center">
-          <Stat label="Karma" value={Number(profile.karma_points).toFixed(0)} />
-          <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
+        <div className="mt-4 flex justify-center">
+          <div className="rounded-full border border-sky-400/40 bg-sky-500/15 px-5 py-2 text-center">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-sky-200">Karma</p>
+            <p className="text-2xl font-black text-white">{Number(profile.karma_points).toFixed(0)}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+                    <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
           <Stat label="Posts" value={posts.length.toString()} />
           <Stat label="Streak" value={`${profile.streak_days}`} icon={<Flame className="h-3 w-3" />} />
         </div>
