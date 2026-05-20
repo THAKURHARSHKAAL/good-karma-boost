@@ -72,28 +72,31 @@ function Leaderboard() {
 
       const { data: posts } = await supabase
         .from("posts")
-        .select("user_id,karma_value,location_lat,location_lng,profiles:profiles!posts_user_id_fkey(username,display_name,avatar_url,location_lat,location_lng)")
+        .select("user_id,karma_value")
         .gte("created_at", since!)
-        .limit(1000);
+        .limit(2000);
 
-      const totals = new Map<string, Row>();
+      const totals = new Map<string, number>();
       for (const p of posts ?? []) {
-        const prof = (p as { profiles: { username: string; display_name: string | null; avatar_url: string | null; location_lat: number | null; location_lng: number | null } | null }).profiles;
-        if (!prof) continue;
-        const cur = totals.get(p.user_id);
-        if (cur) cur.score += Number(p.karma_value);
-        else
-          totals.set(p.user_id, {
-            user_id: p.user_id,
-            username: prof.username,
-            display_name: prof.display_name,
-            avatar_url: prof.avatar_url,
-            location_lat: prof.location_lat,
-            location_lng: prof.location_lng,
-            score: Number(p.karma_value),
-          });
+        totals.set(p.user_id, (totals.get(p.user_id) ?? 0) + Number(p.karma_value));
       }
-      setRows([...totals.values()].sort((a, b) => b.score - a.score).slice(0, 100));
+      const userIds = [...totals.keys()];
+      const { data: profs } = userIds.length
+        ? await supabase
+            .from("profiles")
+            .select("id,username,display_name,avatar_url,location_lat,location_lng")
+            .in("id", userIds)
+        : { data: [] };
+      const built: Row[] = (profs ?? []).map((p) => ({
+        user_id: p.id,
+        username: p.username,
+        display_name: p.display_name,
+        avatar_url: p.avatar_url,
+        location_lat: p.location_lat,
+        location_lng: p.location_lng,
+        score: totals.get(p.id) ?? 0,
+      }));
+      setRows(built.sort((a, b) => b.score - a.score).slice(0, 100));
     })();
   }, [tab]);
 
