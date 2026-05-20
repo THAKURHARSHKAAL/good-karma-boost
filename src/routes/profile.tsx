@@ -1,13 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { levelFor } from "@/lib/karma";
-import { Loader2, Sparkles, LogOut, Award, Image as ImageIcon } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  LogOut,
+  Award,
+  Image as ImageIcon,
+  MapPin,
+  Flame,
+  Save,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
@@ -27,26 +38,46 @@ type Profile = {
   karma_points: number;
   level: string;
   streak_days: number;
+  location_city: string | null;
 };
 
 function ProfilePage() {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [posts, setPosts] = useState<{ id: string; image_url: string | null; title: string; karma_value: number }[]>([]);
+  const [posts, setPosts] = useState<
+    { id: string; image_url: string | null; title: string; karma_value: number }[]
+  >([]);
   const [rank, setRank] = useState<number | null>(null);
   const [badges, setBadges] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ display_name: "", username: "", bio: "", location_city: "" });
 
   const load = async () => {
     if (!user) return;
     const [{ data: p }, { data: ps }, { data: all }, { data: b }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).single(),
-      supabase.from("posts").select("id,image_url,title,karma_value").eq("user_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id,karma_points").order("karma_points", { ascending: false }).limit(1000),
+      supabase
+        .from("posts")
+        .select("id,image_url,title,karma_value")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("id,karma_points")
+        .order("karma_points", { ascending: false })
+        .limit(1000),
       supabase.from("badges").select("badge_type").eq("user_id", user.id),
     ]);
-    setProfile(p as Profile);
+    const loaded = p as Profile;
+    setProfile(loaded);
     setPosts(ps ?? []);
     setBadges((b ?? []).map((x) => x.badge_type));
+    setForm({
+      display_name: loaded?.display_name ?? "",
+      username: loaded?.username ?? "",
+      bio: loaded?.bio ?? "",
+      location_city: loaded?.location_city ?? "",
+    });
     if (all) setRank(all.findIndex((x) => x.id === user.id) + 1 || null);
   };
 
@@ -55,13 +86,43 @@ function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  const hasChanges = useMemo(() => {
+    if (!profile) return false;
+    return (
+      form.display_name !== (profile.display_name ?? "") ||
+      form.username !== profile.username ||
+      form.bio !== (profile.bio ?? "") ||
+      form.location_city !== (profile.location_city ?? "")
+    );
+  }, [form, profile]);
+
+  const saveProfile = async () => {
+    if (!user || !hasChanges) return;
+    if (!form.username.trim()) return toast.error("Username is required");
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: form.display_name.trim() || null,
+        username: form.username.trim().toLowerCase().replace(/\s+/g, "_"),
+        bio: form.bio.trim() || null,
+        location_city: form.location_city.trim() || null,
+      })
+      .eq("id", user.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Profile updated");
+    load();
+  };
+
   const uploadAvatar = async (file: File) => {
     if (!user) return;
     const ext = file.name.split(".").pop() || "jpg";
     const path = `${user.id}/avatar.${ext}`;
     const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
     if (error) return toast.error(error.message);
-    const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl + `?t=${Date.now()}`;
+    const url =
+      supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl + `?t=${Date.now()}`;
     await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
     toast.success("Avatar updated");
     load();
@@ -77,13 +138,13 @@ function ProfilePage() {
   const lvl = levelFor(Number(profile.karma_points));
 
   return (
-    <div>
-      <div className="p-6 bg-gradient-to-b from-accent/50 to-transparent">
+    <div className="min-h-full bg-black text-white">
+      <div className="border-b border-white/10 px-5 py-4 bg-zinc-950">
         <div className="flex items-start gap-4">
           <label className="relative cursor-pointer">
-            <Avatar className="h-20 w-20 ring-4 ring-background shadow">
+            <Avatar className="h-20 w-20 ring-2 ring-white/30">
               <AvatarImage src={profile.avatar_url ?? undefined} />
-              <AvatarFallback className="text-xl">
+              <AvatarFallback className="text-xl bg-zinc-800 text-white">
                 {(profile.display_name || profile.username).slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -93,45 +154,100 @@ function ProfilePage() {
               hidden
               onChange={(e) => e.target.files?.[0] && uploadAvatar(e.target.files[0])}
             />
-            <span className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1.5 shadow">
+            <span className="absolute -bottom-1 -right-1 bg-white text-black rounded-full p-1.5">
               <ImageIcon className="h-3 w-3" />
             </span>
           </label>
           <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-lg leading-tight truncate">{profile.display_name || profile.username}</h1>
-            <p className="text-sm text-muted-foreground truncate">@{profile.username}</p>
-            <div className="mt-2 inline-flex items-center gap-1 text-xs font-semibold bg-[var(--karma)]/15 text-[oklch(0.45_0.18_75)] dark:text-[var(--karma)] px-2 py-0.5 rounded-full">
+            <h1 className="font-bold text-xl leading-tight truncate">
+              {profile.display_name || profile.username}
+            </h1>
+            <p className="text-sm text-zinc-400 truncate">@{profile.username}</p>
+            <div className="mt-2 inline-flex items-center gap-1 text-xs font-semibold bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full">
               <Sparkles className="h-3 w-3" /> {lvl.name}
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={signOut}
+            className="text-zinc-300 hover:bg-zinc-800 hover:text-white"
+          >
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mt-5 text-center">
+        <div className="grid grid-cols-4 gap-2 mt-5 text-center">
           <Stat label="Karma" value={Number(profile.karma_points).toFixed(0)} />
           <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
           <Stat label="Posts" value={posts.length.toString()} />
+          <Stat
+            label="Streak"
+            value={`${profile.streak_days}`}
+            icon={<Flame className="h-3 w-3" />}
+          />
         </div>
 
         <div className="mt-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+          <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
             <span>{lvl.name}</span>
             <span>{lvl.next} pts</span>
           </div>
-          <Progress value={lvl.progress * 100} className="h-2" />
+          <Progress value={lvl.progress * 100} className="h-2 bg-zinc-800" />
+        </div>
+      </div>
+
+      <div className="px-4 py-4 border-b border-white/10 space-y-3">
+        <h2 className="text-sm font-semibold">Edit profile</h2>
+        <div className="grid grid-cols-1 gap-2">
+          <Input
+            value={form.display_name}
+            onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
+            placeholder="Name"
+            className="bg-zinc-900 border-zinc-700 text-white"
+          />
+          <Input
+            value={form.username}
+            onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+            placeholder="Username"
+            className="bg-zinc-900 border-zinc-700 text-white"
+          />
+          <Input
+            value={form.location_city}
+            onChange={(e) => setForm((f) => ({ ...f, location_city: e.target.value }))}
+            placeholder="City"
+            className="bg-zinc-900 border-zinc-700 text-white"
+          />
+          <Textarea
+            value={form.bio}
+            onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+            placeholder="Bio"
+            className="bg-zinc-900 border-zinc-700 text-white min-h-20"
+            maxLength={200}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-zinc-500 inline-flex items-center gap-1">
+            <MapPin className="h-3 w-3" /> Keep your profile up to date.
+          </p>
+          <Button onClick={saveProfile} disabled={!hasChanges || saving} className="rounded-full">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{" "}
+            Save
+          </Button>
         </div>
       </div>
 
       {badges.length > 0 && (
-        <div className="px-4 py-3 border-t border-border">
-          <div className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+        <div className="px-4 py-3 border-b border-white/10">
+          <div className="text-xs font-semibold text-zinc-400 mb-2 flex items-center gap-1">
             <Award className="h-3.5 w-3.5" /> Badges
           </div>
           <div className="flex gap-2 flex-wrap">
             {badges.map((b) => (
-              <span key={b} className="text-xs bg-accent text-accent-foreground rounded-full px-3 py-1 capitalize">
+              <span
+                key={b}
+                className="text-xs bg-zinc-800 text-zinc-100 rounded-full px-3 py-1 capitalize"
+              >
                 {b}
               </span>
             ))}
@@ -139,22 +255,29 @@ function ProfilePage() {
         </div>
       )}
 
-      <div className="border-t border-border">
+      <div>
         {posts.length === 0 ? (
-          <div className="text-center py-12 text-sm text-muted-foreground">No posts yet — share your first good deed.</div>
+          <div className="text-center py-12 text-sm text-zinc-500">
+            No posts yet — share your first good deed.
+          </div>
         ) : (
-          <div className="grid grid-cols-3 gap-0.5">
+          <div className="grid grid-cols-3 gap-[1px] bg-zinc-900">
             {posts.map((p) => (
-              <div key={p.id} className="aspect-square bg-muted relative overflow-hidden">
+              <div key={p.id} className="aspect-square bg-zinc-800 relative overflow-hidden">
                 {p.image_url ? (
-                  <img src={p.image_url} alt={p.title} className="w-full h-full object-cover" loading="lazy" />
+                  <img
+                    src={p.image_url}
+                    alt={p.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center p-2 text-xs text-center text-muted-foreground">
+                  <div className="w-full h-full flex items-center justify-center p-2 text-xs text-center text-zinc-400">
                     {p.title}
                   </div>
                 )}
-                <div className="absolute bottom-1 right-1 bg-background/85 backdrop-blur px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-0.5">
-                  <Sparkles className="h-2.5 w-2.5 text-[var(--karma)]" />
+                <div className="absolute bottom-1 right-1 bg-black/75 px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-0.5">
+                  <Sparkles className="h-2.5 w-2.5 text-yellow-300" />
                   {Number(p.karma_value).toFixed(1)}
                 </div>
               </div>
@@ -166,11 +289,14 @@ function ProfilePage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
-    <div className="bg-card border border-border rounded-xl py-2.5">
-      <div className="font-bold text-base">{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="bg-zinc-900 border border-white/10 rounded-xl py-2.5">
+      <div className="font-bold text-base inline-flex items-center gap-1">
+        {icon}
+        {value}
+      </div>
+      <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
 }
