@@ -3,8 +3,23 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
-import { Sparkles, Loader2, Timer } from "lucide-react";
+import { Sparkles, Loader2, Timer, TriangleAlert } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function formatCountdown(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeconds / 3600)
+    .toString()
+    .padStart(2, "0");
+  const m = Math.floor((totalSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -25,6 +40,7 @@ export function AppShell({ children, title = "Karma" }: { children: ReactNode; t
   const navigate = useNavigate();
   const [lastPostAt, setLastPostAt] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(Date.now());
+  const [showPopup, setShowPopup] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -83,6 +99,7 @@ export function AppShell({ children, title = "Karma" }: { children: ReactNode; t
       if (error) return;
 
       localStorage.setItem(storageKey, String(windowsMissed));
+      toast.error(`You lost ${penalty} karma: no post in time.`);
     };
 
     applyPenalty();
@@ -143,17 +160,23 @@ export function AppShell({ children, title = "Karma" }: { children: ReactNode; t
 
       <main className="mx-auto w-full max-w-md flex-1 pb-24">{children}</main>
 
-      <div className="pointer-events-none fixed top-3 right-3 z-40">
-        <div
-          className={`rounded-xl border px-3 py-2 text-sm font-bold tracking-widest shadow-2xl ${
-            isUrgent
-              ? "border-red-400/60 bg-red-500/20 text-red-200"
-              : "border-sky-400/60 bg-sky-500/20 text-sky-200"
-          }`}
-        >
-          {formatCountdown(remaining)}
+      {showPopup && (
+        <div className="fixed bottom-24 right-3 left-3 z-40 mx-auto max-w-md rounded-xl border border-sky-400/30 bg-black/95 p-3 shadow-2xl">
+          <div className="flex items-start justify-between gap-2">
+            <div className="text-xs">
+              <p className="font-bold text-white inline-flex items-center gap-1">
+                <TriangleAlert className="h-3.5 w-3.5 text-sky-300" /> Post within 24 hours
+              </p>
+              <p className="mt-1 text-zinc-300">
+                Countdown: <span className="text-sky-300 font-bold">{formatCountdown(remaining)}</span>. Miss it and you lose 10 points.
+              </p>
+            </div>
+            <button className="text-zinc-400 text-xs" onClick={() => setShowPopup(false)}>
+              Close
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <BottomNav />
       <Toaster position="top-center" />
