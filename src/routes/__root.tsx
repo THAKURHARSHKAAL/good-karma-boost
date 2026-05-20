@@ -77,10 +77,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Karma is a community app that gamifies real-world kindness. Share good deeds, get rated, climb local leaderboards." },
       { name: "author", content: "Karma" },
       { property: "og:title", content: "Karma — Do good. Get rated." },
-      { property: "og:description", content: "Share good deeds, get rated, climb local leaderboards." },
+      { property: "og:description", content: "Karma is a community app that gamifies real-world kindness. Share good deeds, get rated, climb local leaderboards." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Karma — Do good. Get rated." },
+      { name: "twitter:description", content: "Karma is a community app that gamifies real-world kindness. Share good deeds, get rated, climb local leaderboards." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70f94786-964f-4f46-8ee4-0e03b6c18152/id-preview-fd57c191--01656ccd-4a54-4e53-953f-17ecc0bc7f76.lovable.app-1779292237167.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70f94786-964f-4f46-8ee4-0e03b6c18152/id-preview-fd57c191--01656ccd-4a54-4e53-953f-17ecc0bc7f76.lovable.app-1779292237167.png" },
     ],
     links: [
       {
