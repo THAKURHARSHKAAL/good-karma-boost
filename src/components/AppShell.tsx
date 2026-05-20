@@ -22,12 +22,12 @@ export function AppShell({ children, title = "Karma" }: { children: ReactNode; t
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl border-b border-border">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="sticky top-0 z-30 bg-black/85 backdrop-blur-xl border-b border-white/10">
         <div className="mx-auto max-w-md flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
-            <span className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
+            <span className="h-7 w-7 rounded-lg bg-sky-500 flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-black" />
             </span>
             <span className="font-bold tracking-tight text-lg">{title}</span>
           </div>
