@@ -14,6 +14,7 @@ export const Route = createFileRoute("/")({
 function FeedPage() {
   return (
     <AppShell>
+      <StoriesTray />
       <Feed />
     </AppShell>
   );
@@ -77,13 +78,10 @@ function Feed() {
   }
 
   return (
-    <>
-      <StoriesTray />
-      <div className="divide-y divide-white/10">
-        {posts.map((p) => (
-          <PostCard key={p.id} post={p} onChange={load} />
-        ))}
-      </div>
-    </>
+    <div className="divide-y divide-white/10">
+      {posts.map((p) => (
+        <PostCard key={p.id} post={p} onChange={load} />
+      ))}
+    </div>
   );
 }
