@@ -1,18 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { Plus, MapPin, Loader2, Check } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { timeAgo } from "@/lib/karma";
 
 export const Route = createFileRoute("/help")({
@@ -37,20 +32,9 @@ type Req = {
   profile: { username: string; display_name: string | null; avatar_url: string | null } | null;
 };
 
-const schema = z.object({
-  title: z.string().trim().min(3).max(120),
-  description: z.string().trim().max(1000).optional(),
-});
-
 function HelpRequests() {
   const { user } = useAuth();
   const [rows, setRows] = useState<Req[] | null>(null);
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
-  const [coords, setCoords] = useState<{ lat: number; lng: number; name: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
   const load = async () => {
     const { data } = await supabase
       .from("help_requests")
@@ -70,40 +54,6 @@ function HelpRequests() {
   useEffect(() => {
     load();
   }, []);
-
-  const detect = () => {
-    navigator.geolocation?.getCurrentPosition((p) =>
-      setCoords({
-        lat: p.coords.latitude,
-        lng: p.coords.longitude,
-        name: `${p.coords.latitude.toFixed(3)}, ${p.coords.longitude.toFixed(3)}`,
-      }),
-    );
-  };
-
-  const submit = async () => {
-    if (!user) return;
-    const parsed = schema.safeParse({ title, description: desc || undefined });
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
-    setBusy(true);
-    const { error } = await supabase.from("help_requests").insert({
-      user_id: user.id,
-      title: parsed.data.title,
-      description: parsed.data.description ?? null,
-      location_lat: coords?.lat ?? null,
-      location_lng: coords?.lng ?? null,
-      location_name: coords?.name ?? null,
-    });
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Help request posted");
-      setTitle("");
-      setDesc("");
-      setOpen(false);
-      load();
-    }
-  };
 
   const offer = async (r: Req) => {
     if (!user) return;
@@ -137,35 +87,6 @@ function HelpRequests() {
 
   return (
     <div className="p-4 space-y-4">
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button className="w-full h-11">
-            <Plus className="h-4 w-4 mr-2" /> Ask for help
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Need a hand?</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>What do you need?</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Details</Label>
-              <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} maxLength={1000} />
-            </div>
-            <Button variant="outline" onClick={detect} className="w-full">
-              <MapPin className="h-4 w-4 mr-2" />
-              {coords?.name || "Tag location"}
-            </Button>
-            <Button onClick={submit} disabled={busy} className="w-full">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post request"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {rows.length === 0 ? (
         <div className="text-center py-16 text-sm text-muted-foreground">No help requests yet.</div>
