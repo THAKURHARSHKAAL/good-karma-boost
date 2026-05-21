@@ -35,6 +35,30 @@ export type Database = {
         }
         Relationships: []
       }
+      comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       help_requests: {
         Row: {
           created_at: string
@@ -83,6 +107,7 @@ export type Database = {
       posts: {
         Row: {
           avg_rating: number
+          comment_count: number
           created_at: string
           description: string | null
           id: string
@@ -92,12 +117,14 @@ export type Database = {
           location_lng: number | null
           location_name: string | null
           post_type: Database["public"]["Enums"]["post_type"]
+          share_count: number
           title: string
           user_id: string
           vote_count: number
         }
         Insert: {
           avg_rating?: number
+          comment_count?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -107,12 +134,14 @@ export type Database = {
           location_lng?: number | null
           location_name?: string | null
           post_type?: Database["public"]["Enums"]["post_type"]
+          share_count?: number
           title: string
           user_id: string
           vote_count?: number
         }
         Update: {
           avg_rating?: number
+          comment_count?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -122,6 +151,7 @@ export type Database = {
           location_lng?: number | null
           location_name?: string | null
           post_type?: Database["public"]["Enums"]["post_type"]
+          share_count?: number
           title?: string
           user_id?: string
           vote_count?: number
@@ -242,6 +272,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stories: {
+        Row: {
+          caption: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          media_url: string
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_url: string
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_url?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

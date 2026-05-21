@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PostCard, type Post } from "@/components/PostCard";
 import { AppShell } from "@/components/AppShell";
+import { StoriesTray } from "@/components/StoriesTray";
 import { useAuth } from "@/lib/auth";
 import { Loader2, Sparkles } from "lucide-react";
 
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/")({
 function FeedPage() {
   return (
     <AppShell>
+      <StoriesTray />
       <Feed />
     </AppShell>
   );
@@ -76,7 +78,7 @@ function Feed() {
   }
 
   return (
-    <div className="divide-y divide-border">
+    <div className="divide-y divide-white/10">
       {posts.map((p) => (
         <PostCard key={p.id} post={p} onChange={load} />
       ))}

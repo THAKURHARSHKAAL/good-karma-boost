@@ -1,8 +1,15 @@
 @import "tailwindcss" source(none);
+@import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap");
 @source "../src";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+
+@keyframes karma-blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+.karma-blink { animation: karma-blink 1s ease-in-out infinite; }
+.font-signature { font-family: 'Dancing Script', cursive; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

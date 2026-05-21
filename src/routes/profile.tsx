@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { StoriesTray } from "@/components/StoriesTray";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/profile")({
   component: () => (
     <AppShell title="Profile">
+      <StoriesTray />
       <ProfilePage />
     </AppShell>
   ),
