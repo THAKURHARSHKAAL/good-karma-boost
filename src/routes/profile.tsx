@@ -33,6 +33,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/profile")({
   component: () => (
     <AppShell title="Profile">
+      <StoriesTray />
       <ProfilePage />
     </AppShell>
   ),
