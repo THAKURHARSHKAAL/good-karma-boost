@@ -38,7 +38,7 @@ function HelpRequests() {
   const load = async () => {
     const { data } = await supabase
       .from("help_requests")
-      .select("*")
+      .select("id,user_id,helper_id,title,description,location_name,status,requester_confirmed,helper_confirmed,created_at")
       .order("created_at", { ascending: false })
       .limit(80);
     if (!data) return setRows([]);
