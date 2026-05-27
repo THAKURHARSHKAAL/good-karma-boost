@@ -323,12 +323,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_stories: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      nearby_leaderboard: {
+        Args: { _km?: number; _lat: number; _limit?: number; _lng: number }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          distance_km: number
+          id: string
+          karma_points: number
+          username: string
+        }[]
       }
     }
     Enums: {
