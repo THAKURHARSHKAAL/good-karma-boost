@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Crown, Loader2, Sparkles, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { haversineKm } from "@/lib/karma";
 
 export const Route = createFileRoute("/leaderboard")({
   component: () => (
@@ -22,8 +21,6 @@ type Row = {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
-  location_lat: number | null;
-  location_lng: number | null;
   score: number;
 };
 
@@ -50,10 +47,27 @@ function Leaderboard() {
             ? new Date(Date.now() - 7 * 86400_000).toISOString()
             : null;
 
+      if (scope === "local") {
+        if (!me) { setRows([]); return; }
+        const { data } = await (supabase.rpc as any)("nearby_leaderboard", {
+          _lat: me.lat, _lng: me.lng, _km: 10, _limit: 100,
+        });
+        setRows(
+          (data ?? []).map((p: any) => ({
+            user_id: p.id,
+            username: p.username,
+            display_name: p.display_name,
+            avatar_url: p.avatar_url,
+            score: Number(p.karma_points),
+          })),
+        );
+        return;
+      }
+
       if (tab === "all") {
         const { data } = await supabase
           .from("profiles")
-          .select("id,username,display_name,avatar_url,karma_points,location_lat,location_lng")
+          .select("id,username,display_name,avatar_url,karma_points")
           .order("karma_points", { ascending: false })
           .limit(100);
         setRows(
@@ -62,8 +76,6 @@ function Leaderboard() {
             username: p.username,
             display_name: p.display_name,
             avatar_url: p.avatar_url,
-            location_lat: p.location_lat,
-            location_lng: p.location_lng,
             score: Number(p.karma_points),
           })),
         );
@@ -84,7 +96,7 @@ function Leaderboard() {
       const { data: profs } = userIds.length
         ? await supabase
             .from("profiles")
-            .select("id,username,display_name,avatar_url,location_lat,location_lng")
+            .select("id,username,display_name,avatar_url")
             .in("id", userIds)
         : { data: [] };
       const built: Row[] = (profs ?? []).map((p) => ({
@@ -92,21 +104,13 @@ function Leaderboard() {
         username: p.username,
         display_name: p.display_name,
         avatar_url: p.avatar_url,
-        location_lat: p.location_lat,
-        location_lng: p.location_lng,
         score: totals.get(p.id) ?? 0,
       }));
       setRows(built.sort((a, b) => b.score - a.score).slice(0, 100));
     })();
-  }, [tab]);
+  }, [tab, scope, me?.lat, me?.lng]);
 
-  const filtered =
-    scope === "local" && me && rows
-      ? rows.filter(
-          (r) =>
-            r.location_lat != null && r.location_lng != null && haversineKm(me, { lat: r.location_lat, lng: r.location_lng }) <= 10,
-        )
-      : rows;
+  const filtered = rows;
 
   return (
     <div className="p-4 space-y-4">
