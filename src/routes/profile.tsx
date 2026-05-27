@@ -66,7 +66,7 @@ function ProfilePage() {
   const load = async () => {
     if (!user) return;
     const [{ data: p }, { data: ps }, { data: all }, { data: b }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", user.id).single(),
+      supabase.from("profiles").select("id,username,display_name,avatar_url,karma_points,level,streak_days,bio,location_city,last_active_date,created_at,updated_at").eq("id", user.id).single(),
       supabase
         .from("posts")
         .select("id,image_url,title,karma_value")
